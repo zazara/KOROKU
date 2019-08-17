@@ -4,6 +4,7 @@
 #include <gtkmm/drawingarea.h>
 #include <tuple>
 #include <vector>
+
 namespace KOROKU {
 
 class Brush {
@@ -100,4 +101,5 @@ bool Canvas::on_mouse_press(GdkEventButton *event) {
   }
   return true;
 }
+
 } // namespace KOROKU
