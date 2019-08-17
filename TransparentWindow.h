@@ -1,7 +1,6 @@
+#include "ClientArea.h"
 #include <cairomm/context.h>
 #include <cmath>
-#include <ctime>
-
 #include <gtkmm.h>
 
 namespace KOROKU {
@@ -13,8 +12,9 @@ public:
   KOROKU::Canvas canvas;
   Gtk::HScale hscale;
   Gtk::Box hbox;
-  // Gtk::Box *vbox;
+  Gtk::Box *vbox;
   Gtk::Button button;
+  KOROKU::ClientArea clientArea;
 };
 
 TransparentWindow::TransparentWindow() {
@@ -26,7 +26,7 @@ TransparentWindow::TransparentWindow() {
 
   this->hbox = Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 0);
   // White Box
-  Gtk::Box *vbox = new Gtk::Box(Gtk::ORIENTATION_VERTICAL, 0);
+  vbox = new Gtk::Box(Gtk::ORIENTATION_VERTICAL, 0);
   // Paint Process
   Glib::RefPtr<Gtk::CssProvider> css_provider = Gtk::CssProvider::create();
   css_provider->load_from_data("box {background-image: image(white);}");
@@ -41,7 +41,8 @@ TransparentWindow::TransparentWindow() {
   vbox->pack_start(hscale, false, false);
   vbox->pack_start(button, false, false);
   hbox.pack_start(*vbox, false, false);
-  this->add(hbox);
+  // this->add(hbox);
+  this->add(clientArea);
   this->show_all();
 }
 TransparentWindow::~TransparentWindow() {}
