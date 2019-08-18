@@ -41,6 +41,10 @@ class Canvas : public Gtk::DrawingArea {
 public:
   Canvas();
   virtual ~Canvas();
+  void undo();
+  void redo();
+  bool canUndo();
+  bool canRedo();
 
 protected:
   bool on_draw(const Cairo::RefPtr<Cairo::Context> &cr) override;
@@ -48,7 +52,8 @@ protected:
   virtual bool on_mouse_press(GdkEventButton *event);
 
 private:
-  std::vector<Brush> Brushes; // Process
+  std::vector<Brush> Brushes;     // Process
+  std::vector<Brush> redoBrushes; // redoProcess
 };
 
 Canvas::Canvas() {
@@ -101,5 +106,23 @@ bool Canvas::on_mouse_press(GdkEventButton *event) {
   }
   return true;
 }
+
+void Canvas::undo() {
+  if (this->canUndo()) {
+    this->redoBrushes.push_back(this->Brushes.back());
+    this->Brushes.pop_back();
+    this->queue_draw();
+  }
+}
+void Canvas::redo() {
+  if (this->canRedo()) {
+    this->Brushes.push_back(this->redoBrushes.back());
+    this->redoBrushes.pop_back();
+    this->queue_draw();
+  }
+}
+
+bool Canvas::canUndo() { return !this->Brushes.empty(); }
+bool Canvas::canRedo() { return !this->redoBrushes.empty(); }
 
 } // namespace KOROKU

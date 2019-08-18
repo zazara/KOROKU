@@ -6,11 +6,11 @@ namespace KOROKU {
 class SideMenu : public Gtk::Box {
 public:
   SideMenu();
+  KOROKU::EditBox editBox;
 
 private:
   Gtk::Scale hscale;
   Gtk::Frame editFrame, brushFrame, backgroundColorFrame;
-  KOROKU::EditBox editBox;
   KOROKU::BrushBox brushBox;
   KOROKU::BackgroundColorBox backgroundColorBox;
 };
