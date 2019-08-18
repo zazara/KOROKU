@@ -45,6 +45,7 @@ public:
   void redo();
   bool canUndo();
   bool canRedo();
+  void resetRedoBrush();
 
 protected:
   bool on_draw(const Cairo::RefPtr<Cairo::Context> &cr) override;
@@ -102,6 +103,7 @@ bool Canvas::on_mouse_press(GdkEventButton *event) {
     Brush brush = Brush(1, 0, 0, 0, 1.0);
     brush.addPoint(event->x, event->y);
     this->Brushes.push_back(brush);
+    this->resetRedoBrush();
     queue_draw();
   }
   return true;
@@ -124,5 +126,7 @@ void Canvas::redo() {
 
 bool Canvas::canUndo() { return !this->Brushes.empty(); }
 bool Canvas::canRedo() { return !this->redoBrushes.empty(); }
+
+void Canvas::resetRedoBrush() { this->redoBrushes.clear(); }
 
 } // namespace KOROKU
