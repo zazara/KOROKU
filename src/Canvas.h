@@ -203,7 +203,18 @@ bool Canvas::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
   // draw pointer circle
   cr->set_line_width(1);
   cr->set_source_rgba(0, 0, 0, 1);
-  cr->arc(mouse_x, mouse_y, primary_brush.width / 2, 0, 2 * M_PI); // 要修正
+  switch (brush_select) {
+  case PRIMARY_BRUSH:
+    cr->arc(mouse_x, mouse_y, primary_brush.width / 2, 0, 2 * M_PI);
+    break;
+  case SECONDARY_BRUSH:
+    cr->arc(mouse_x, mouse_y, secondary_brush.width / 2, 0, 2 * M_PI);
+    break;
+  default:
+    cr->arc(mouse_x, mouse_y, eraser_brush.width / 2, 0, 2 * M_PI);
+    break;
+  }
+
   cr->stroke();
 
   return true;
@@ -247,7 +258,7 @@ bool Canvas::on_mouse_press(GdkEventButton *event) {
 
 bool Canvas::on_mouse_move(GdkEventMotion *event) {
   this->mouse_x = event->x;
-  this->mouse_x = event->y;
+  this->mouse_y = event->y;
   if (event->state & Gdk::EventMask::BUTTON_PRESS_MASK) {
     Brush *current_brush = &this->brushes.back();
     current_brush->add_point(event->x, event->y);
