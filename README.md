@@ -7,7 +7,7 @@ KOROKU enables users to trace images anytime.
 
 ## Installation
 
-To install KOROKU, you can choose to download a binary or build from source. The binari supports 64bit Linux OS.
+To install KOROKU, you can choose to download a binary or build from source. The binary supports 64bit Linux OS.
 
 ### Prebuilt binaries
 
