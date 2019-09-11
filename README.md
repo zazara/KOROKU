@@ -25,3 +25,9 @@ make
 cd bin
 ./koroku
 ```
+
+resource compile:
+
+```
+glib-compile-resources --target=resources.cpp --generate-source gresource.xml 
+```
