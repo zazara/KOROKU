@@ -57,6 +57,7 @@ private:
   void redo();
   void reset_redo_brushes();
   bool set_background_opacity(Gtk::ScrollType, double);
+  void clear_layer();
   void erase_all();
   void show_about();
   void quit_about_dialog();
@@ -76,7 +77,6 @@ private:
   Gtk::ColorButton *secondary_color_button;
   Gtk::RadioButton *primary_select_button;
   Gtk::RadioButton *secondary_select_button;
-  Gtk::RadioButton *eraser_select_button;
   Gtk::CheckButton *eraser_check_button;
   Gtk::Scale *brush_width_scale;
   Gtk::Scale *brush_opacity_scale;
@@ -84,6 +84,7 @@ private:
   Gtk::Button *redo_button;
   Gtk::Scale *background_opacity_scale;
   Gtk::Button *erase_all_button;
+  Gtk::Button *clear_layer_button;
   Gtk::Button *about_button;
   Gtk::AboutDialog *about_dialog;
 };
@@ -131,13 +132,10 @@ Canvas::Canvas(BaseObjectType *obj, const Glib::RefPtr<Gtk::Builder> glade_xml)
   // select button
   refBuilder->get_widget("primary_select_button", primary_select_button);
   refBuilder->get_widget("secondary_select_button", secondary_select_button);
-  refBuilder->get_widget("eraser_select_button", eraser_select_button);
   refBuilder->get_widget("eraser_check_button", eraser_check_button);
   primary_select_button->signal_clicked().connect(
       sigc::mem_fun(*this, &Canvas::set_layer_select));
   secondary_select_button->signal_clicked().connect(
-      sigc::mem_fun(*this, &Canvas::set_layer_select));
-  eraser_select_button->signal_clicked().connect(
       sigc::mem_fun(*this, &Canvas::set_layer_select));
   eraser_check_button->signal_clicked().connect(
       sigc::mem_fun(*this, &Canvas::set_layer_select));
@@ -163,6 +161,10 @@ Canvas::Canvas(BaseObjectType *obj, const Glib::RefPtr<Gtk::Builder> glade_xml)
   background_opacity_scale->signal_change_value().connect(
       sigc::mem_fun(*this, &Canvas::set_background_opacity));
 
+  // clear layer button
+  refBuilder->get_widget("clear_layer_button", clear_layer_button);
+  clear_layer_button->signal_clicked().connect(
+      sigc::mem_fun(*this, &Canvas::clear_layer));
   // erase all button
   refBuilder->get_widget("erase_all_button", erase_all_button);
   erase_all_button->signal_clicked().connect(
@@ -358,13 +360,6 @@ void Canvas::set_layer_select() {
       brush_opacity_scale->set_sensitive(true);
     }
   }
-
-  // } else {
-  //   brush_select = ERASER_BRUSH;
-  //   brush_width_scale->set_value(eraser_brush.width);
-  //   brush_opacity_scale->set_value(eraser_brush.alpha);
-  //   brush_opacity_scale->set_sensitive(false);
-  // }
 }
 
 bool Canvas::set_brush_width(Gtk::ScrollType scroll, double value) {
@@ -411,6 +406,15 @@ bool Canvas::set_background_opacity(Gtk::ScrollType scroll, double value) {
   background_opacity = value;
   this->queue_draw();
   return true;
+}
+
+void Canvas::clear_layer() {
+  for (auto brush_idx = 0; brush_idx < this->brushes.size(); brush_idx++) {
+    if (this->brushes[brush_idx].brush_layer == this->layer_select) {
+      this->brushes.erase(this->brushes.begin() + brush_idx);
+    }
+  }
+  this->queue_draw();
 }
 
 void Canvas::erase_all() {
