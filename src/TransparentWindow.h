@@ -48,7 +48,8 @@ TransparentWindow::TransparentWindow() {
   // Transparent Process
   Glib::RefPtr<Gdk::Visual> visual = get_screen()->get_rgba_visual();
   gtk_widget_set_visual(GTK_WIDGET(gobj()), visual->gobj());
-
+  auto icon = Gdk::Pixbuf::create_from_resource("images/s_icon.png");
+  this->set_icon(icon);
   this->show_all();
 }
 TransparentWindow::~TransparentWindow() {}
