@@ -186,7 +186,8 @@ bool Canvas::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
   std::vector<Brush> primary_brushes;
   std::vector<Brush> secondary_brushes;
 
-  for (auto brush_idx = 0; brush_idx < this->brushes.size(); brush_idx++) {
+  for (long unsigned brush_idx = 0; brush_idx < this->brushes.size();
+       brush_idx++) {
     if (this->brushes[brush_idx].brush_layer == PRIMARY_LAYER) {
       primary_brushes.push_back(this->brushes[brush_idx]);
     } else {
@@ -195,7 +196,7 @@ bool Canvas::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
   }
 
   cr->push_group();
-  for (auto index = 0; index < secondary_brushes.size(); index++) {
+  for (long unsigned index = 0; index < secondary_brushes.size(); index++) {
     auto current_brush = secondary_brushes[index];
     if (current_brush.is_eraser) {
       cr->set_operator(Cairo::OPERATOR_SOURCE);
@@ -211,8 +212,8 @@ bool Canvas::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
     cr->set_line_cap(Cairo::LINE_CAP_ROUND);
     cr->set_line_join(Cairo::LINE_JOIN_ROUND);
 
-    for (auto point_index = 0; point_index < current_brush.points.size();
-         point_index++) {
+    for (long unsigned point_index = 0;
+         point_index < current_brush.points.size(); point_index++) {
       cr->line_to(current_brush.points[point_index].x,
                   current_brush.points[point_index].y);
     }
@@ -221,7 +222,7 @@ bool Canvas::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
   cr->pop_group_to_source();
   cr->paint();
   cr->push_group();
-  for (auto index = 0; index < primary_brushes.size(); index++) {
+  for (long unsigned index = 0; index < primary_brushes.size(); index++) {
     auto current_brush = primary_brushes[index];
     if (current_brush.is_eraser) {
       cr->set_operator(Cairo::OPERATOR_SOURCE);
@@ -237,8 +238,8 @@ bool Canvas::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
     cr->set_line_cap(Cairo::LINE_CAP_ROUND);
     cr->set_line_join(Cairo::LINE_JOIN_ROUND);
 
-    for (auto point_index = 0; point_index < current_brush.points.size();
-         point_index++) {
+    for (long unsigned point_index = 0;
+         point_index < current_brush.points.size(); point_index++) {
       cr->line_to(current_brush.points[point_index].x,
                   current_brush.points[point_index].y);
     }
@@ -409,7 +410,8 @@ bool Canvas::set_background_opacity(Gtk::ScrollType scroll, double value) {
 }
 
 void Canvas::clear_layer() {
-  for (auto brush_idx = 0; brush_idx < this->brushes.size(); brush_idx++) {
+  for (long unsigned brush_idx = 0; brush_idx < this->brushes.size();
+       brush_idx++) {
     if (this->brushes[brush_idx].brush_layer == this->layer_select) {
       this->brushes.erase(this->brushes.begin() + brush_idx);
     }
