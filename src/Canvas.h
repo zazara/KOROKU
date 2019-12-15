@@ -410,11 +410,15 @@ bool Canvas::set_background_opacity(Gtk::ScrollType scroll, double value) {
 }
 
 void Canvas::clear_layer() {
-  for (long unsigned brush_idx = 0; brush_idx < this->brushes.size();
-       brush_idx++) {
+  long unsigned brush_idx = this->brushes.size() - 1;
+  while (true) {
     if (this->brushes[brush_idx].brush_layer == this->layer_select) {
       this->brushes.erase(this->brushes.begin() + brush_idx);
     }
+    if (brush_idx == 0) {
+      break;
+    }
+    brush_idx--;
   }
   this->queue_draw();
 }
