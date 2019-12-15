@@ -28,6 +28,11 @@ typedef struct point {
   int y;
 } Point;
 
+enum ELayer {
+  PRIMARY_LAYER = 1,
+  SECONDARY_LAYER = 2,
+};
+
 class Brush {
 
 public:
@@ -37,10 +42,11 @@ public:
   double blue;
   double alpha;
   bool is_eraser;
+  ELayer brush_layer;
   std::vector<Point> points;
 
   Brush(/* args */);
-  Brush(double, double, double, double, double, bool);
+  Brush(double, double, double, double, double, bool, ELayer);
   bool add_point(int, int);
   ~Brush();
 };
@@ -55,13 +61,14 @@ Brush::Brush(/* args */) {
 }
 
 Brush::Brush(double width, double red, double green, double blue, double alpha,
-             bool is_eraser) {
+             bool is_eraser, ELayer layer_info) {
   this->width = width;
   this->red = red;
   this->green = green;
   this->blue = blue;
   this->alpha = alpha;
   this->is_eraser = is_eraser;
+  this->brush_layer = layer_info;
 }
 Brush::~Brush() {}
 

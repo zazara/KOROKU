@@ -50,7 +50,7 @@ private:
   virtual bool on_mouse_press(GdkEventButton *event);
   void set_primary_color();
   void set_secondary_color();
-  void set_brush_select();
+  void set_layer_select();
   bool set_brush_width(Gtk::ScrollType, double);
   bool set_brush_opacity(Gtk::ScrollType, double);
   void undo();
@@ -62,18 +62,22 @@ private:
   void quit_about_dialog();
 
   int brush_select;
+  ELayer layer_select;
   int mouse_x;
   int mouse_y;
   double background_opacity;
+  bool is_eraser_mode;
 
   std::vector<Brush> brushes;      // Process
   std::vector<Brush> redo_brushes; // redoProcess
 
+  // UI Parts
   Gtk::ColorButton *primary_color_button;
   Gtk::ColorButton *secondary_color_button;
   Gtk::RadioButton *primary_select_button;
   Gtk::RadioButton *secondary_select_button;
   Gtk::RadioButton *eraser_select_button;
+  Gtk::CheckButton *eraser_check_button;
   Gtk::Scale *brush_width_scale;
   Gtk::Scale *brush_opacity_scale;
   Gtk::Button *undo_button;
@@ -106,11 +110,13 @@ Canvas::Canvas(BaseObjectType *obj, const Glib::RefPtr<Gtk::Builder> glade_xml)
 
   // init
   brush_select = PRIMARY_BRUSH;
-  eraser_brush = KOROKU::Brush(10, 1.0, 1.0, 1.0, 0.5, true);
-  secondary_brush = KOROKU::Brush(3, 0, 0, 1.0, 0.3, false);
+  layer_select = PRIMARY_LAYER;
+  eraser_brush = KOROKU::Brush(10, 1.0, 1.0, 1.0, 0.5, true, PRIMARY_LAYER);
+  secondary_brush = KOROKU::Brush(3, 0, 0, 1.0, 0.3, false, SECONDARY_LAYER);
   mouse_x = -50;
   mouse_y = -50;
   background_opacity = 0.5;
+  is_eraser_mode = false;
 
   // color button
   refBuilder->get_widget("primary_color_button", primary_color_button);
@@ -126,12 +132,15 @@ Canvas::Canvas(BaseObjectType *obj, const Glib::RefPtr<Gtk::Builder> glade_xml)
   refBuilder->get_widget("primary_select_button", primary_select_button);
   refBuilder->get_widget("secondary_select_button", secondary_select_button);
   refBuilder->get_widget("eraser_select_button", eraser_select_button);
+  refBuilder->get_widget("eraser_check_button", eraser_check_button);
   primary_select_button->signal_clicked().connect(
-      sigc::mem_fun(*this, &Canvas::set_brush_select));
+      sigc::mem_fun(*this, &Canvas::set_layer_select));
   secondary_select_button->signal_clicked().connect(
-      sigc::mem_fun(*this, &Canvas::set_brush_select));
+      sigc::mem_fun(*this, &Canvas::set_layer_select));
   eraser_select_button->signal_clicked().connect(
-      sigc::mem_fun(*this, &Canvas::set_brush_select));
+      sigc::mem_fun(*this, &Canvas::set_layer_select));
+  eraser_check_button->signal_clicked().connect(
+      sigc::mem_fun(*this, &Canvas::set_layer_select));
 
   // brush width scale
   refBuilder->get_widget("brush_width_scale", brush_width_scale);
@@ -166,39 +175,75 @@ Canvas::Canvas(BaseObjectType *obj, const Glib::RefPtr<Gtk::Builder> glade_xml)
       sigc::mem_fun(*this, &Canvas::show_about));
 }
 
-// デストラクタ
 Canvas::~Canvas() {}
 
-// 描画
+// draw
 bool Canvas::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
   cr->set_source_rgba(1.0, 1.0, 1.0, background_opacity);
   cr->paint();
+  std::vector<Brush> primary_brushes;
+  std::vector<Brush> secondary_brushes;
 
-  // draw all brush
-  for (auto brush_itr = this->brushes.begin(); brush_itr != this->brushes.end();
-       ++brush_itr) {
-    // eraser or else
-    if (brush_itr->is_eraser) {
+  for (auto brush_idx = 0; brush_idx < this->brushes.size(); brush_idx++) {
+    if (this->brushes[brush_idx].brush_layer == PRIMARY_LAYER) {
+      primary_brushes.push_back(this->brushes[brush_idx]);
+    } else {
+      secondary_brushes.push_back(this->brushes[brush_idx]);
+    }
+  }
+
+  cr->push_group();
+  for (auto index = 0; index < secondary_brushes.size(); index++) {
+    auto current_brush = secondary_brushes[index];
+    if (current_brush.is_eraser) {
       cr->set_operator(Cairo::OPERATOR_SOURCE);
-      cr->set_source_rgba(1.0, 1.0, 1.0, background_opacity);
+      cr->set_source_rgba(0, 0, 0, 0);
     } else {
       cr->set_operator(Cairo::OPERATOR_OVER);
       // set cairo property
-      cr->set_source_rgba(brush_itr->red, brush_itr->green, brush_itr->blue,
-                          brush_itr->alpha);
+      cr->set_source_rgba(current_brush.red, current_brush.green,
+                          current_brush.blue, current_brush.alpha);
     }
 
-    cr->set_line_width(brush_itr->width);
+    cr->set_line_width(current_brush.width);
     cr->set_line_cap(Cairo::LINE_CAP_ROUND);
     cr->set_line_join(Cairo::LINE_JOIN_ROUND);
 
-    // draw current brush
-    for (auto point_itr = brush_itr->points.begin();
-         point_itr != brush_itr->points.end(); ++point_itr) {
-      cr->line_to(point_itr->x, point_itr->y);
+    for (auto point_index = 0; point_index < current_brush.points.size();
+         point_index++) {
+      cr->line_to(current_brush.points[point_index].x,
+                  current_brush.points[point_index].y);
     }
     cr->stroke();
   }
+  cr->pop_group_to_source();
+  cr->paint();
+  cr->push_group();
+  for (auto index = 0; index < primary_brushes.size(); index++) {
+    auto current_brush = primary_brushes[index];
+    if (current_brush.is_eraser) {
+      cr->set_operator(Cairo::OPERATOR_SOURCE);
+      cr->set_source_rgba(0, 0, 0, 0);
+    } else {
+      cr->set_operator(Cairo::OPERATOR_OVER);
+      // set cairo property
+      cr->set_source_rgba(current_brush.red, current_brush.green,
+                          current_brush.blue, current_brush.alpha);
+    }
+
+    cr->set_line_width(current_brush.width);
+    cr->set_line_cap(Cairo::LINE_CAP_ROUND);
+    cr->set_line_join(Cairo::LINE_JOIN_ROUND);
+
+    for (auto point_index = 0; point_index < current_brush.points.size();
+         point_index++) {
+      cr->line_to(current_brush.points[point_index].x,
+                  current_brush.points[point_index].y);
+    }
+    cr->stroke();
+  }
+  cr->pop_group_to_source();
+  cr->paint();
 
   // draw pointer circle
   cr->set_line_width(1);
@@ -225,10 +270,10 @@ bool Canvas::on_mouse_press(GdkEventButton *event) {
   if (event->button == 1) {              // clear
     if (brush_select == PRIMARY_BRUSH) { // clear
 
-      Brush brush =
-          Brush(this->primary_brush.width, this->primary_brush.red,
-                this->primary_brush.green, this->primary_brush.blue,
-                this->primary_brush.alpha, this->primary_brush.is_eraser);
+      Brush brush = Brush(this->primary_brush.width, this->primary_brush.red,
+                          this->primary_brush.green, this->primary_brush.blue,
+                          this->primary_brush.alpha,
+                          this->primary_brush.is_eraser, PRIMARY_LAYER);
 
       brush.add_point(event->x, event->y);
       this->brushes.push_back(brush);
@@ -237,15 +282,16 @@ bool Canvas::on_mouse_press(GdkEventButton *event) {
       Brush brush =
           Brush(this->secondary_brush.width, this->secondary_brush.red,
                 this->secondary_brush.green, this->secondary_brush.blue,
-                this->secondary_brush.alpha, this->secondary_brush.is_eraser);
+                this->secondary_brush.alpha, this->secondary_brush.is_eraser,
+                SECONDARY_LAYER);
 
       brush.add_point(event->x, event->y);
       this->brushes.push_back(brush);
     } else {
-      Brush brush =
-          Brush(this->eraser_brush.width, this->eraser_brush.red,
-                this->eraser_brush.green, this->eraser_brush.blue,
-                this->eraser_brush.alpha, this->eraser_brush.is_eraser);
+      Brush brush = Brush(this->eraser_brush.width, this->eraser_brush.red,
+                          this->eraser_brush.green, this->eraser_brush.blue,
+                          this->eraser_brush.alpha,
+                          this->eraser_brush.is_eraser, layer_select);
       brush.add_point(event->x, event->y);
       this->brushes.push_back(brush);
     }
@@ -282,23 +328,43 @@ void Canvas::set_secondary_color() {
       secondary_color_button->get_color().get_blue() / 65535.0;
 }
 
-void Canvas::set_brush_select() {
-  if (primary_select_button->get_active()) {
-    brush_select = PRIMARY_BRUSH;
-    brush_width_scale->set_value(primary_brush.width);
-    brush_opacity_scale->set_value(primary_brush.alpha);
-    brush_opacity_scale->set_sensitive(true);
-  } else if (secondary_select_button->get_active()) {
-    brush_select = SECONDARY_BRUSH;
-    brush_width_scale->set_value(secondary_brush.width);
-    brush_opacity_scale->set_value(secondary_brush.alpha);
-    brush_opacity_scale->set_sensitive(true);
-  } else {
+void Canvas::set_layer_select() {
+  if (eraser_check_button->get_active()) {
+    is_eraser_mode = true;
     brush_select = ERASER_BRUSH;
     brush_width_scale->set_value(eraser_brush.width);
     brush_opacity_scale->set_value(eraser_brush.alpha);
     brush_opacity_scale->set_sensitive(false);
+  } else {
+    is_eraser_mode = false;
   }
+
+  if (primary_select_button->get_active()) {
+    //
+    layer_select = PRIMARY_LAYER;
+    if (!is_eraser_mode) {
+      brush_select = PRIMARY_BRUSH;
+      brush_width_scale->set_value(primary_brush.width);
+      brush_opacity_scale->set_value(primary_brush.alpha);
+      brush_opacity_scale->set_sensitive(true);
+    }
+  } else if (secondary_select_button->get_active()) {
+    //
+    layer_select = SECONDARY_LAYER;
+    if (!is_eraser_mode) {
+      brush_select = SECONDARY_BRUSH;
+      brush_width_scale->set_value(secondary_brush.width);
+      brush_opacity_scale->set_value(secondary_brush.alpha);
+      brush_opacity_scale->set_sensitive(true);
+    }
+  }
+
+  // } else {
+  //   brush_select = ERASER_BRUSH;
+  //   brush_width_scale->set_value(eraser_brush.width);
+  //   brush_opacity_scale->set_value(eraser_brush.alpha);
+  //   brush_opacity_scale->set_sensitive(false);
+  // }
 }
 
 bool Canvas::set_brush_width(Gtk::ScrollType scroll, double value) {
