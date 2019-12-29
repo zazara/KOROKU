@@ -22,7 +22,6 @@ You must have gtkmm-3.0 and g++ installed.
 git clone https://github.com/zazara/KOROKU.git
 cd KOROKU
 make
-cd bin
 ./koroku
 ```
 
