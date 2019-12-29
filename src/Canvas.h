@@ -23,7 +23,6 @@
 #include <cairomm/context.h>
 #include <cmath>
 #include <gtkmm.h>
-#include <iostream>
 #include <vector>
 extern Glib::RefPtr<Gtk::Builder> refBuilder; // glade ref
 namespace KOROKU {
@@ -77,6 +76,8 @@ private:
   Gtk::ColorButton *secondary_color_button;
   Gtk::RadioButton *primary_select_button;
   Gtk::RadioButton *secondary_select_button;
+  Gtk::CheckButton *primary_layer_select_button;
+  Gtk::CheckButton *secondary_layer_select_button;
   Gtk::CheckButton *eraser_check_button;
   Gtk::Scale *brush_width_scale;
   Gtk::Scale *brush_opacity_scale;
@@ -140,6 +141,16 @@ Canvas::Canvas(BaseObjectType *obj, const Glib::RefPtr<Gtk::Builder> glade_xml)
   eraser_check_button->signal_clicked().connect(
       sigc::mem_fun(*this, &Canvas::set_layer_select));
 
+  // select layer button
+  refBuilder->get_widget("primary_layer_select_button",
+                         primary_layer_select_button);
+  refBuilder->get_widget("secondary_layer_select_button",
+                         secondary_layer_select_button);
+  primary_layer_select_button->signal_clicked().connect(
+      sigc::mem_fun(*this, &Canvas::queue_draw));
+  secondary_layer_select_button->signal_clicked().connect(
+      sigc::mem_fun(*this, &Canvas::queue_draw));
+
   // brush width scale
   refBuilder->get_widget("brush_width_scale", brush_width_scale);
   brush_width_scale->signal_change_value().connect(
@@ -186,6 +197,7 @@ bool Canvas::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
   std::vector<Brush> primary_brushes;
   std::vector<Brush> secondary_brushes;
 
+  // sort brush
   for (long unsigned brush_idx = 0; brush_idx < this->brushes.size();
        brush_idx++) {
     if (this->brushes[brush_idx].brush_layer == PRIMARY_LAYER) {
@@ -195,58 +207,65 @@ bool Canvas::on_draw(const Cairo::RefPtr<Cairo::Context> &cr) {
     }
   }
 
-  cr->push_group();
-  for (long unsigned index = 0; index < secondary_brushes.size(); index++) {
-    auto current_brush = secondary_brushes[index];
-    if (current_brush.is_eraser) {
-      cr->set_operator(Cairo::OPERATOR_SOURCE);
-      cr->set_source_rgba(0, 0, 0, 0);
-    } else {
-      cr->set_operator(Cairo::OPERATOR_OVER);
-      // set cairo property
-      cr->set_source_rgba(current_brush.red, current_brush.green,
-                          current_brush.blue, current_brush.alpha);
-    }
+  // secondary draw
+  if (secondary_layer_select_button->get_active()) {
+    cr->push_group();
+    for (long unsigned index = 0; index < secondary_brushes.size(); index++) {
+      auto current_brush = secondary_brushes[index];
+      if (current_brush.is_eraser) {
+        cr->set_operator(Cairo::OPERATOR_SOURCE);
+        cr->set_source_rgba(0, 0, 0, 0);
+      } else {
+        cr->set_operator(Cairo::OPERATOR_OVER);
+        // set cairo property
+        cr->set_source_rgba(current_brush.red, current_brush.green,
+                            current_brush.blue, current_brush.alpha);
+      }
 
-    cr->set_line_width(current_brush.width);
-    cr->set_line_cap(Cairo::LINE_CAP_ROUND);
-    cr->set_line_join(Cairo::LINE_JOIN_ROUND);
+      cr->set_line_width(current_brush.width);
+      cr->set_line_cap(Cairo::LINE_CAP_ROUND);
+      cr->set_line_join(Cairo::LINE_JOIN_ROUND);
 
-    for (long unsigned point_index = 0;
-         point_index < current_brush.points.size(); point_index++) {
-      cr->line_to(current_brush.points[point_index].x,
-                  current_brush.points[point_index].y);
+      for (long unsigned point_index = 0;
+           point_index < current_brush.points.size(); point_index++) {
+        cr->line_to(current_brush.points[point_index].x,
+                    current_brush.points[point_index].y);
+      }
+      cr->stroke();
     }
-    cr->stroke();
+    cr->pop_group_to_source();
+    cr->paint();
   }
-  cr->pop_group_to_source();
-  cr->paint();
-  cr->push_group();
-  for (long unsigned index = 0; index < primary_brushes.size(); index++) {
-    auto current_brush = primary_brushes[index];
-    if (current_brush.is_eraser) {
-      cr->set_operator(Cairo::OPERATOR_SOURCE);
-      cr->set_source_rgba(0, 0, 0, 0);
-    } else {
-      cr->set_operator(Cairo::OPERATOR_OVER);
-      // set cairo property
-      cr->set_source_rgba(current_brush.red, current_brush.green,
-                          current_brush.blue, current_brush.alpha);
-    }
 
-    cr->set_line_width(current_brush.width);
-    cr->set_line_cap(Cairo::LINE_CAP_ROUND);
-    cr->set_line_join(Cairo::LINE_JOIN_ROUND);
+  // primary draw
+  if (primary_layer_select_button->get_active()) {
+    cr->push_group();
+    for (long unsigned index = 0; index < primary_brushes.size(); index++) {
+      auto current_brush = primary_brushes[index];
+      if (current_brush.is_eraser) {
+        cr->set_operator(Cairo::OPERATOR_SOURCE);
+        cr->set_source_rgba(0, 0, 0, 0);
+      } else {
+        cr->set_operator(Cairo::OPERATOR_OVER);
+        // set cairo property
+        cr->set_source_rgba(current_brush.red, current_brush.green,
+                            current_brush.blue, current_brush.alpha);
+      }
 
-    for (long unsigned point_index = 0;
-         point_index < current_brush.points.size(); point_index++) {
-      cr->line_to(current_brush.points[point_index].x,
-                  current_brush.points[point_index].y);
+      cr->set_line_width(current_brush.width);
+      cr->set_line_cap(Cairo::LINE_CAP_ROUND);
+      cr->set_line_join(Cairo::LINE_JOIN_ROUND);
+
+      for (long unsigned point_index = 0;
+           point_index < current_brush.points.size(); point_index++) {
+        cr->line_to(current_brush.points[point_index].x,
+                    current_brush.points[point_index].y);
+      }
+      cr->stroke();
     }
-    cr->stroke();
+    cr->pop_group_to_source();
+    cr->paint();
   }
-  cr->pop_group_to_source();
-  cr->paint();
 
   // draw pointer circle
   cr->set_line_width(1);
@@ -317,7 +336,6 @@ bool Canvas::on_mouse_move(GdkEventMotion *event) {
 }
 
 void Canvas::set_primary_color() {
-
   primary_brush.red = primary_color_button->get_color().get_red() / 65535.0;
   primary_brush.green = primary_color_button->get_color().get_green() / 65535.0;
   primary_brush.blue = primary_color_button->get_color().get_blue() / 65535.0;
@@ -343,7 +361,6 @@ void Canvas::set_layer_select() {
   }
 
   if (primary_select_button->get_active()) {
-    //
     layer_select = PRIMARY_LAYER;
     if (!is_eraser_mode) {
       brush_select = PRIMARY_BRUSH;
@@ -352,7 +369,6 @@ void Canvas::set_layer_select() {
       brush_opacity_scale->set_sensitive(true);
     }
   } else if (secondary_select_button->get_active()) {
-    //
     layer_select = SECONDARY_LAYER;
     if (!is_eraser_mode) {
       brush_select = SECONDARY_BRUSH;
