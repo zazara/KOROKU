@@ -58,8 +58,6 @@ private:
   bool set_background_opacity(Gtk::ScrollType, double);
   void clear_layer();
   void erase_all();
-  void save();
-  void cancel_save();
   void show_save_dialog();
   void show_about();
   void quit_about_dialog();
