@@ -28,5 +28,6 @@ make
 resource compile:
 
 ```
+cd src
 glib-compile-resources --target=resources.cpp --generate-source gresource.xml 
 ```
