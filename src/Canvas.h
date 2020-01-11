@@ -58,6 +58,9 @@ private:
   bool set_background_opacity(Gtk::ScrollType, double);
   void clear_layer();
   void erase_all();
+  void save();
+  void cancel_save();
+  void show_save_dialog();
   void show_about();
   void quit_about_dialog();
 
@@ -86,17 +89,19 @@ private:
   Gtk::Scale *background_opacity_scale;
   Gtk::Button *erase_all_button;
   Gtk::Button *clear_layer_button;
+  Gtk::Button *save_button;
+  Gtk::FileChooserDialog *file_chooser_dialog;
+  Gtk::Button *confirm_button;
+  Gtk::Button *cancel_button;
   Gtk::Button *about_button;
   Gtk::AboutDialog *about_dialog;
 };
 
-// コンストラクタ
 Canvas::Canvas() {
   add_events(Gdk::BUTTON_PRESS_MASK | Gdk::POINTER_MOTION_MASK |
              Gdk::BUTTON_RELEASE_MASK);
 }
 
-// コンストラクタ
 Canvas::Canvas(BaseObjectType *obj, const Glib::RefPtr<Gtk::Builder> glade_xml)
     : Gtk::DrawingArea(obj) {
 
@@ -171,7 +176,6 @@ Canvas::Canvas(BaseObjectType *obj, const Glib::RefPtr<Gtk::Builder> glade_xml)
   refBuilder->get_widget("background_opacity_scale", background_opacity_scale);
   background_opacity_scale->signal_change_value().connect(
       sigc::mem_fun(*this, &Canvas::set_background_opacity));
-
   // clear layer button
   refBuilder->get_widget("clear_layer_button", clear_layer_button);
   clear_layer_button->signal_clicked().connect(
@@ -180,6 +184,17 @@ Canvas::Canvas(BaseObjectType *obj, const Glib::RefPtr<Gtk::Builder> glade_xml)
   refBuilder->get_widget("erase_all_button", erase_all_button);
   erase_all_button->signal_clicked().connect(
       sigc::mem_fun(*this, &Canvas::erase_all));
+
+  // save button
+  refBuilder->get_widget("save_button", save_button);
+  save_button->signal_clicked().connect(
+      sigc::mem_fun(*this, &Canvas::show_save_dialog));
+  // file chooser dialog
+  refBuilder->get_widget("file_chooser_dialog", file_chooser_dialog);
+
+  // // canfirm & cancel button
+  file_chooser_dialog->add_button(Gtk::Stock::SAVE, Gtk::RESPONSE_OK);
+  file_chooser_dialog->add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
 
   // about button
   refBuilder->get_widget("about_button", about_button);
@@ -445,6 +460,20 @@ void Canvas::erase_all() {
   this->brushes.clear();
   this->reset_redo_brushes();
   this->queue_draw();
+}
+
+void Canvas::show_save_dialog() {
+  auto save_result = this->file_chooser_dialog->run();
+  this->file_chooser_dialog->hide();
+  if (save_result == Gtk::RESPONSE_OK) {
+    auto file_name = this->file_chooser_dialog->get_filename();
+    auto export_surface = Cairo::ImageSurface::create(
+        Cairo::FORMAT_ARGB32, this->get_width(), this->get_height());
+    Cairo::RefPtr<Cairo::Context> export_context =
+        Cairo::Context::create(export_surface);
+    this->on_draw(export_context);
+    export_surface->write_to_png(file_name);
+  }
 }
 
 void Canvas::show_about() {
