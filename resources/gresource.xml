@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/koroku">
+    <file  alias="ui/glade_project.glade" preprocess="xml-stripblanks">resources/glade_project.glade</file>
+    <file alias="ui/images/s_icon.png">resources/images/s_icon.png</file>
+    <file  alias="ui/style.css">resources/style.css</file>
+  </gresource>
+</gresources>

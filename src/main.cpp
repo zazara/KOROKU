@@ -28,7 +28,8 @@ int main(int argc, char **argv) {
 
   try {
     // refBuilder = Gtk::Builder::create_from_file("src/glade_project.glade");
-    refBuilder = Gtk::Builder::create_from_resource("/ui/glade_project.glade");
+    refBuilder =
+        Gtk::Builder::create_from_resource("/koroku/ui/glade_project.glade");
   } catch (const Glib::FileError &ex) {
     std::cerr << "FileError: " << ex.what() << std::endl;
     return 1;
@@ -40,7 +41,7 @@ int main(int argc, char **argv) {
   Gtk::Box *side_menu = nullptr;
   refBuilder->get_widget("side_menu", side_menu);
   Glib::RefPtr<Gtk::CssProvider> css_provider = Gtk::CssProvider::create();
-  css_provider->load_from_resource("/ui/style.css");
+  css_provider->load_from_resource("/koroku/ui/style.css");
   side_menu->get_style_context()->add_provider(
       css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 

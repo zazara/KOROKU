@@ -21,13 +21,7 @@ You must have gtkmm-3.0 and g++ installed.
 ```
 git clone https://github.com/zazara/KOROKU.git
 cd KOROKU
+make resources
 make
 ./koroku
-```
-
-resource compile:
-
-```
-cd src
-glib-compile-resources --target=resources.cpp --generate-source gresource.xml 
 ```
